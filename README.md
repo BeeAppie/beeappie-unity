@@ -9,16 +9,16 @@ later, on iOS, Android, Windows, macOS and Linux.
 In Unity: **Window → Package Manager → + → Add package from git URL…**, and enter
 
 ```
-https://github.com/beeappie/beeappie-unity.git#1.0.0
+https://github.com/beeappie/beeappie-unity.git#1.0.1
 ```
 
 (Unity needs Git installed for this.) Or add it to `Packages/manifest.json`:
 
 ```json
-"com.beeappie.sdk": "https://github.com/beeappie/beeappie-unity.git#1.0.0"
+"com.beeappie.sdk": "https://github.com/beeappie/beeappie-unity.git#1.0.1"
 ```
 
-Without Git: download `com.beeappie.sdk-1.0.0.tgz` from the
+Without Git: download `com.beeappie.sdk-1.0.1.tgz` from the
 [release](https://github.com/beeappie/beeappie-unity/releases), put it in your project (e.g. in a `Packages/BeeAppie`
 folder you commit), and use **+ → Add package from tarball…**. To update, change the version after `#` (or add the new
 file).

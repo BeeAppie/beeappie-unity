@@ -1,6 +1,6 @@
 {
   "name": "com.beeappie.sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "BeeAppie",
   "description": "Users, sign-in, analytics, sessions, error reports, leaderboards, achievements, polls, announcements, feedback, support chat, remote config, remote content and push tokens for Unity games, without a backend of your own.",
   "unity": "2021.3",

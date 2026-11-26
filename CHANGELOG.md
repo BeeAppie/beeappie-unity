@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+- `BeeAppieSdk.Start` refuses a key that can't be one (spaces, or characters like the "…" in the Quickstart's
+  placeholder `bak_test_…`) with a clear message, and BeeAppie stays off. Before, every call failed with "Header value
+  contains invalid characters".
+
 ## 1.0.0
 
 - First release: users and sign-in, consent, analytics events, sessions, error reports with the steps before them and
