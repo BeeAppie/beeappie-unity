@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<doc>
+  <assembly>
+    <name>BeeAppie.Unity.UI</name>
+  </assembly>
+  <members>
+    <member name="T:BeeAppie.Unity.UI.BeeAppieUI">
+      <summary>The fullscreen promo and the promo views' look.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.UI.BeeAppieUI.CelebrateAchievements">
+      <summary>
+            Shows "Achievement unlocked" at the top of the screen for a few seconds when one is unlocked on this device
+            (Unlocked). On by default; turn it off to celebrate in your own way.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.UI.BeeAppieUI.Appearance">
+      <summary>Light (the default) or dark promos, e.g. to match the game's own theme.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.UI.BeeAppieUI.ShowFullscreenPromoAsync">
+      <summary>
+            Shows a fullscreen promo of one of your other apps over the game, e.g. between levels or where an interstitial ad
+            failed to load. The player can close it at once (the close button, or Back on Android). Completes once it has
+            closed: true if one was shown, false (at once) when there was nothing to show or it was too soon (at most one every
+            few minutes, as set in the dashboard, and never on the game's first launch). Never throws.
+            <code>await BeeAppieUI.ShowFullscreenPromoAsync();</code></summary>
+    </member>
+    <member name="M:BeeAppie.Unity.UI.BeeAppieUI.ShowSurveyAsync(System.String,BeeAppie.Unity.SurveyPosition)">
+      <summary>
+            Asks the feature survey <paramref name="key" /> (set up under Surveys in the dashboard) as a card over the game, dimmed
+            behind it, at <paramref name="position" />. Completes once it has closed: Answered,
+            Dismissed, or NotShown at once when there was nothing to ask (not
+            live, not for this platform or version, answered already, asked lately, offline, a plan without surveys, or another
+            survey on screen). Never throws.
+            <code>await BeeAppieUI.ShowSurveyAsync("level-value", SurveyPosition.Bottom);</code></summary>
+    </member>
+    <member name="T:BeeAppie.Unity.UI.BeeAppieAppearance">
+      <summary>Light or dark promo colours (Unity cannot read the system's setting on every platform).</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.UI.PromoView">
+      <summary>
+            A slot showing promos of your other apps (<see cref="T:BeeAppie.Unity.UI.PromoBannerView" />, <see cref="T:BeeAppie.Unity.UI.PromoCardView" />): add it to an
+            object under a Canvas. It loads, rotates and reports on its own: a view counts when at least half of it is on screen
+            for a second with the game in the foreground, at least the slot's minimum size (a banner 200 × 40 points, a card
+            120 × 100) and not faded out by a CanvasGroup, and a tap opens the app's store listing. When there is nothing to show
+            (no other app to promote, promos turned off, a game made for kids, offline before the first promos) it takes no space
+            and raises <see cref="E:BeeAppie.Unity.UI.PromoView.NoPromo" />; never an error. Its size is in points, so it looks the same whatever the Canvas
+            Scaler.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.UI.PromoView.Promo">
+      <summary>The promo on screen; null while there is none.</summary>
+    </member>
+    <member name="E:BeeAppie.Unity.UI.PromoView.NoPromo">
+      <summary>
+            Raised when there is nothing to show: the view has collapsed to no size. Once until a promo shows again; the view
+            keeps asking now and then on its own.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.UI.PromoView.Reload">
+      <summary>Asks for a promo now (after <see cref="E:BeeAppie.Unity.UI.PromoView.NoPromo" /> the view asks again every minute anyway).</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.UI.PromoBannerView">
+      <summary>
+            A promo banner: the full width of its parent, 50 to 90 points high depending on the width (about 56 on a phone, 90
+            on a tablet). Put it at the bottom of a screen, or where an ad banner failed to load: e.g. on an object anchored to
+            the bottom of the Canvas and stretched across it.
+            </summary>
+    </member>
+    <member name="T:BeeAppie.Unity.UI.PromoCardView">
+      <summary>A promo card, 300×250 points unless <see cref="P:BeeAppie.Unity.UI.PromoCardView.CardSize" /> says otherwise: for lists, game-over screens and "More games" screens.</summary>
+    </member>
+  </members>
+</doc>

@@ -1,0 +1,23 @@
+{
+  "name": "com.beeappie.sdk",
+  "version": "1.0.0",
+  "displayName": "BeeAppie",
+  "description": "Users, sign-in, analytics, sessions, error reports, leaderboards, achievements, polls, announcements, feedback, support chat, remote config, remote content and push tokens for Unity games, without a backend of your own.",
+  "unity": "2021.3",
+  "documentationUrl": "https://beeappie.com/sdks#unity",
+  "keywords": ["backend", "leaderboards", "achievements", "analytics", "remote-config", "crash-reporting", "support-chat"],
+  "author": { "name": "BeeAppie", "url": "https://beeappie.com" },
+  "license": "SEE LICENSE IN LICENSE.md",
+  "licensesUrl": "https://beeappie.com/sdk-license",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1",
+    "com.unity.ugui": "1.0.0"
+  },
+  "samples": [
+    {
+      "displayName": "Quickstart",
+      "description": "A MonoBehaviour that starts BeeAppie, asks for consent, tracks an event, submits a score and unlocks an achievement.",
+      "path": "Samples~/Quickstart"
+    }
+  ]
+}

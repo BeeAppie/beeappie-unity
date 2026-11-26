@@ -1,0 +1,1316 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<doc>
+  <assembly>
+    <name>BeeAppie.Unity</name>
+  </assembly>
+  <members>
+    <member name="T:BeeAppie.Unity.Achievements">
+      <summary>
+            Achievements that work offline (docs/plans/21-achievements-offline.md): <see cref="M:BeeAppie.Unity.Achievements.Unlock(System.String,System.Nullable{System.DateTimeOffset})" />, <see cref="M:BeeAppie.Unity.Achievements.Increment(System.String,System.Int32,System.Nullable{System.DateTimeOffset})" />
+            and <see cref="M:BeeAppie.Unity.Achievements.SetProgress(System.String,System.Int32,System.Nullable{System.DateTimeOffset})" /> apply at once to a copy kept on the device and are sent in batches, each with the time it
+            happened, when BeeAppie can be reached. <see cref="P:BeeAppie.Unity.Achievements.Current" /> reads the copy: the achievements with their wording in the
+            device's language, the progress and the unlock dates, also offline. Nothing here throws.
+            <para>
+            Sending creates the player, as the other features do, unless the game sends achievements only with consent (a switch in
+            the dashboard): then everything stays on the device until the player allows usage statistics. The UI package shows
+            "Achievement unlocked" by itself (<c>BeeAppieUI.CelebrateAchievements</c>). <c>Client.UnlockAchievementAsync</c> and the
+            other raw calls stay for games that want the server's answer.
+            </para></summary>
+    </member>
+    <member name="E:BeeAppie.Unity.Achievements.Unlocked">
+      <summary>
+            Raised on the main thread once per achievement on this device when it becomes unlocked: by the game's own call (at
+            once, also offline) or on another of the player's devices (seen at the next fetch).
+            </summary>
+    </member>
+    <member name="E:BeeAppie.Unity.Achievements.Changed">
+      <summary>Raised on the main thread when <see cref="P:BeeAppie.Unity.Achievements.Current" /> changed: a write, or a fetch from BeeAppie.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Achievements.Current">
+      <summary>
+            Every achievement as the device knows it now, in the dashboard's order, with the writes not sent yet applied: empty
+            until the first fetch has reached BeeAppie. Hidden ones not unlocked have no name, description or icon.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Achievements.Get(System.String)">
+      <summary>The achievement as the device knows it now, or null (unknown key, or not fetched yet).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Achievements.IsUnlocked(System.String)">
+      <summary>Whether the player has the achievement, as the device knows it now.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Achievements.PendingWrites">
+      <summary>Unlocks and progress not sent yet: offline, or waiting for consent in games that ask for it.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Achievements.FetchedAt">
+      <summary>When the achievements were last fetched from BeeAppie, on this device; null if never.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Achievements.IsUpToDate">
+      <summary>True once fetched since the game started with nothing left to send: <see cref="P:BeeAppie.Unity.Achievements.Current" /> is BeeAppie's.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Achievements.Unlock(System.String,System.Nullable{System.DateTimeOffset})">
+      <summary>
+            Unlocks the achievement: on the device at once, and on BeeAppie as soon as it can be reached. <paramref name="at" />:
+            when it was earned (an earlier date replaces a later one); null: now. No date in the future or over 10 years back.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Achievements.Increment(System.String,System.Int32,System.Nullable{System.DateTimeOffset})">
+      <summary>Adds <paramref name="by" /> to the progress towards the goal (e.g. one more level won); reaching it unlocks it.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Achievements.SetProgress(System.String,System.Int32,System.Nullable{System.DateTimeOffset})">
+      <summary>Sets the progress (e.g. the best level reached); it never goes down. Reaching the goal unlocks it.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Achievements.RefreshAsync">
+      <summary>
+            Sends what waits and fetches the achievements now. Never throws: false when BeeAppie could not be reached;
+            <see cref="P:BeeAppie.Unity.Achievements.Current" /> is then what the device has.
+            </summary>
+    </member>
+    <member name="T:BeeAppie.Unity.BeeAppieClient">
+      <summary>
+            The BeeAppie API for the current user: leaderboards, achievements, polls, announcements, feedback and support chat.
+            Get it from <see cref="P:BeeAppie.Unity.BeeAppieSdk.Client" />. Call from the main thread; each call throws
+            <see cref="T:BeeAppie.Unity.BeeAppieApiException" /> on failure (e.g. offline). A player is created only when a call needs one: polls,
+            announcements and remote config work before (with the app key alone), a vote, a score or feedback creates the player.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieClient.CurrentUser">
+      <summary>The current user, once one is restored or created; null before.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieClient.HasUser">
+      <summary>Whether this device has a player (restored or created), so calls go with their token.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieClient.DeviceId">
+      <summary>This device's id at BeeAppie, once a user was created on it; null before.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieClient.ConsentAtStart">
+      <summary>The player's consent as of the last start; null from an API that does not send it.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieClient.Suspension">
+      <summary>
+            Set while the game's team has the player suspended (a call was answered "user_suspended"); cleared when a start
+            succeeds again.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetRankingsAsync">
+      <summary>The game's leaderboards, with names (and season names) in the device's language when the game has them.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetTopEntriesAsync(System.String,System.Int32,System.String)">
+      <param name="season">With seasons: "current" (the default), "previous" or a past season's key (GetRankingSeasonsAsync).</param>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetMyEntriesAsync(System.String,System.String)">
+      <summary>The current user's entries, with their positions in the whole leaderboard (of that season).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetRankingSeasonsAsync(System.String)">
+      <summary>
+            The past seasons players can look back at, newest first: those with scores within the last
+            <see cref="P:BeeAppie.Unity.Ranking.KeptSeasons" />, each with the developer's <see cref="P:BeeAppie.Unity.RankingSeason.Name" /> in the device's
+            language when there is one. Empty without seasons or with <see cref="P:BeeAppie.Unity.Ranking.ShowPastSeasons" /> off.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.SubmitScoreAsync(System.String,System.Double,System.Nullable{System.DateTimeOffset})">
+      <summary>
+            Submits a score now; throws when BeeAppie can't be reached (<c>BeeAppieSdk.Leaderboards.SubmitScore</c> keeps it on the
+            device instead). <paramref name="at" />: when it was made, if not now: it counts in the season running then, up to 7
+            days late. Before the leaderboard's start or after its end it fails with the code "ranking_not_open".
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.DeleteEntryAsync(System.String,System.String)">
+      <summary>Removes one of the current user's entries.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetAchievementsAsync">
+      <summary>
+            The game's achievements, with this player's progress (none before there is a player: this creates none). Hidden ones
+            not unlocked yet have no name. Names and descriptions in the device's language when the game has them.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.UnlockAchievementAsync(System.String)">
+      <summary>Unlocks the achievement; <see cref="P:BeeAppie.Unity.Achievement.JustUnlocked" /> is true the first time, to celebrate.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.IncrementAchievementAsync(System.String,System.Int32)">
+      <summary>Adds to the progress towards the goal (e.g. one more game played); reaching it unlocks it.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.SetAchievementProgressAsync(System.String,System.Int32)">
+      <summary>Sets the progress (e.g. the best level reached); it never goes down.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetPollsAsync(System.String,System.Int32,System.Int32)">
+      <summary>
+            The polls, newest first: <paramref name="take" /> (up to 100) after <paramref name="skip" />, e.g. a page at a time as the
+            player scrolls. <paramref name="status" /> ("Released" or "Closed") keeps only the open or closed ones.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetPollAsync(System.String)">
+      <summary>The poll, in the device's language when the game has it (the main texts otherwise); the same for the other poll calls.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetPollResultsAsync(System.String)">
+      <summary>The votes so far, as the poll's settings allow the player to see them (e.g. only after voting).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.VoteAsync(System.String,System.Collections.Generic.IEnumerable{BeeAppie.Unity.PollChoice})">
+      <summary>Votes, creating the player first if there is none.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetCommunicationsAsync(System.Int32,System.Int32)">
+      <summary>
+            Published announcements that target this user, important ones then newest first: <paramref name="take" /> (up to 100)
+            after <paramref name="skip" />, e.g. a page at a time as the player scrolls. In the device's language when the game has
+            it, otherwise in the game's main language.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetCommunicationAsync(System.String)">
+      <summary>One announcement, if it is for this user (e.g. the one a push notification opens).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.MarkCommunicationAcknowledgedAsync(System.String)">
+      <summary>The player confirmed they read it (for announcements that require it).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.MarkCommunicationClickedAsync(System.String)">
+      <summary>The player tapped the announcement's button.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.SubmitFeedbackAsync(BeeAppie.Unity.FeedbackCategory,System.String,System.Nullable{System.Int32},System.DateTimeOffset,System.String)">
+      <summary>
+            Feedback kept on the device to send later (<c>BeeAppieSdk.Feedback</c>): <paramref name="writtenAt" /> is when the player
+            wrote it (up to 30 days back), and sending it again with the same key makes one conversation.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetConversationTopicsAsync">
+      <summary>The app's topics, for the player to pick one when starting a conversation; empty when it has none.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.CreateConversationAsync(System.String,System.String)">
+      <summary>
+            Starts a conversation with the team. <paramref name="topic" /> is the key of one of the app's topics (set up in the
+            dashboard's chat settings), so the right people see it; an unknown key starts a general conversation.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.CloseConversationAsync(System.String)">
+      <summary>Closes it for both sides; the player can still read it.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.SendMessageAsync(System.String,System.String,System.Byte[])">
+      <summary>
+            Sends text, an image (JPEG or PNG, at most 2 MB, e.g. a screenshot: <c>EncodeToJPG(80)</c> of a full-HD screen is
+            a few hundred KB, where PNG can pass 2 MB), or both. Past 50 images a player a day, images are refused.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetMessageImageAsync(System.String,System.String)">
+      <summary>A message's image (<see cref="P:BeeAppie.Unity.Message.HasImage" />), e.g. for <c>ImageConversion.LoadImage</c>.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.LinkIdentityAsync(System.String)">
+      <summary>
+            Links another sign-in account (an id token from Apple, Google, Firebase, your own login…) to the current player, who
+            can then sign in with either.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.UnlinkIdentityAsync(System.String)">
+      <summary>Unlinks an account (<see cref="P:BeeAppie.Unity.User.Identities" />); the last one cannot be removed while signed in.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.DeleteMyEventsAsync">
+      <summary>Erases the player's analytics events, keeping the account (e.g. after they withdraw consent).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.DeleteMyIssuesAsync">
+      <summary>Erases the player's error and crash reports.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.DeleteMySessionsAsync">
+      <summary>Erases the player's play sessions.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieClient.GetStatusAsync">
+      <summary>BeeAppie's version and clock; needs no player.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieOptions.BaseUrl">
+      <summary>The API address. Leave it for the BeeAppie cloud.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieOptions.AppVersion">
+      <summary>Defaults to <c>Application.version</c>.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieOptions.AppBuild">
+      <summary>
+            The build number sent with error reports ("1.4.2 (57)"). On Android it defaults to the bundle version code; on other
+            platforms Unity can't read it at runtime: set it (e.g. from <c>PlayerSettings.iOS.buildNumber</c> at build time).
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieOptions.CaptureErrors">
+      <summary>Reports exceptions nobody caught (Unity logs them and carries on), with the steps before. On by default.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieOptions.SessionActivityInterval">
+      <summary>
+            How often the open session's last moment of play is saved on the device (no network): a session the game is killed in
+            then ends at that moment, sent at the next launch. Sessions otherwise close when the game is paused or quits.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieOptions.EventBatchDelay">
+      <summary>
+            How long tracked events wait to be sent together during the game's first 10 minutes (they are kept on the device
+            meanwhile). They are also sent when <see cref="P:BeeAppie.Unity.BeeAppieOptions.EventBatchSize" /> are waiting, when the game is paused and when it
+            starts. Errors are sent at once.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieOptions.LongSessionEventBatchDelay">
+      <summary>How long events wait once the game has been played for 10 minutes: long sessions send them less often.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieOptions.EventBatchSize">
+      <summary>Events waiting that are sent at once (one request carries up to 100).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieOptions.Log">
+      <summary>Writes what BeeAppie does to the Unity console. Off by default.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.BeeAppieSdk">
+      <summary>
+            BeeAppie for Unity: users, sign-in, analytics, sessions, error reports, leaderboards, achievements, polls,
+            announcements, feedback, support chat, remote config and push tokens. Call <see cref="M:BeeAppie.Unity.BeeAppieSdk.Start(System.String,System.Action{BeeAppie.Unity.BeeAppieOptions})" /> once, from the main
+            thread (e.g. in a bootstrap scene's <c>Awake</c>); everything else is here or on <see cref="P:BeeAppie.Unity.BeeAppieSdk.Client" />.
+            Nothing is collected until the player agrees (<see cref="M:BeeAppie.Unity.BeeAppieSdk.SetConsentAsync(BeeAppie.Unity.Consent)" />).
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.Client">
+      <summary>The API for the current player: leaderboards, achievements, polls, announcements, feedback, chat.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.IsInitialized">
+      <summary>
+            Whether there is a player on this device (restored or created). No player is created until one is needed: when the
+            player allows something, or first uses a feature that needs one (a score, an achievement, chat, feedback, a vote…).
+            Until then BeeAppie gets remote config, news and polls with the app key alone, and stores nothing about the person.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.Consent">
+      <summary>The player's choices, as last known (also offline).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.CurrentSessionId">
+      <summary>The open play session, if the player allows sessions.</summary>
+    </member>
+    <member name="E:BeeAppie.Unity.BeeAppieSdk.UserChanged">
+      <summary>Raised on the main thread when the device's player changes (signing in or out).</summary>
+    </member>
+    <member name="E:BeeAppie.Unity.BeeAppieSdk.Suspended">
+      <summary>
+            Raised on the main thread when the game's team has suspended the player: show <see cref="P:BeeAppie.Unity.BeeAppieSdk.Suspension" /> (until when,
+            and why) instead of the features that need BeeAppie. Nothing is sent or received for the player until it ends.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.Suspension">
+      <summary>The player's suspension, while BeeAppie is refused for them; null otherwise.</summary>
+    </member>
+    <member name="E:BeeAppie.Unity.BeeAppieSdk.ConfigChanged">
+      <summary>Raised on the main thread when new remote config values arrive.</summary>
+    </member>
+    <member name="E:BeeAppie.Unity.BeeAppieSdk.EntitlementsChanged">
+      <summary>Raised on the main thread when the player's entitlements were fetched.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.Start(System.String,System.Action{BeeAppie.Unity.BeeAppieOptions})">
+      <summary>
+            Starts BeeAppie. Returns at once: the player is restored (or created) in the background, and if the game starts
+            offline BeeAppie starts when it can. Calling it again does nothing.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.EnsureStartedAsync">
+      <summary>
+            Starts BeeAppie if it has not managed to yet (e.g. the game was opened offline with a saved player). False if it
+            still cannot. Creates no player: see <see cref="M:BeeAppie.Unity.BeeAppieSdk.EnsureUserAsync" />.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.EnsureUserAsync">
+      <summary>
+            Makes sure there is a player, creating one if needed: for a game that needs the player's id, or before a feature of
+            its own that should count as the player's. BeeAppie's own calls do it when they need to. False if BeeAppie cannot be reached.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.SetConsentAsync(BeeAppie.Unity.Consent)">
+      <summary>
+            Stores the player's choices. What they no longer allow is no longer collected, and queued data of it is dropped.
+            They apply on this device at once, also offline: then they reach BeeAppie when it can be reached again. Allowing
+            anything creates the player if there is none yet; declining everything before a player exists stays on the device
+            (and is sent if a player is created later). Never throws.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.TrackEvent(System.String,System.Collections.Generic.IDictionary{System.String,System.String})">
+      <summary>Records an analytics event. It is queued and sent in batches; nothing is recorded without consent.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.ReportException(System.Exception,System.Collections.Generic.IDictionary{System.String,System.String})">
+      <summary>Reports an exception your code caught, with the steps before it.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.AddBreadcrumb(System.String,System.String)">
+      <summary>Adds a step to the trail sent with the next error report, e.g. "Shop opened". Keep personal data out of it.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.Screen(System.String)">
+      <summary>Records that the player opened a screen or menu (scenes are recorded already).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.FlushAsync">
+      <summary>
+            Sends queued events and reports now. Events need a player (and their consent). Errors go with the player if they
+            allowed error reports; otherwise anonymously if the game accepts that (once the config says so: until then they
+            wait), or not at all.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.ChatAsync">
+      <summary>
+            The shared real-time chat connection, connected: new messages, typing and conversation changes as they happen. It
+            disconnects while the game is paused and reconnects on resume. Throws if it cannot connect (e.g. offline); the next
+            call tries again. Not available on WebGL.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.SignInAsync(System.String)">
+      <summary>
+            Signs this device in with an id token from your login (Sign in with Apple, Google Play Games via Firebase, your own
+            backend…). The same account on another device gets the same player, with this device's anonymous progress merged in.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.SignOutAsync">
+      <summary>Signs this device out; it continues with a new anonymous player.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.SetUserPropertiesAsync(System.Collections.Generic.IDictionary{System.String,System.Object})">
+      <summary>
+            Properties of the player, to target announcements, push and remote config, e.g. "plan" = "gold". Null removes one.
+            Never store anything that identifies the person. Never throws: offline, they are sent once BeeAppie can be reached
+            again (while the game runs). Before a player exists they wait on the device (while the game runs) and are sent when
+            one is created: properties alone create no player.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.ExportUserDataAsync">
+      <summary>
+            A ZIP of everything BeeAppie stores about the player (GDPR access and portability), saved and returned as a path.
+            Without a player nothing is stored: then a ZIP that says so, rather than creating a player to export.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.TeamChatsAllowed">
+      <summary>
+            Whether the game's team may start conversations with the player, as last known. On until the player turns it off
+            with <see cref="M:BeeAppie.Unity.BeeAppieSdk.SetTeamChatsAllowedAsync(System.Boolean)" />; conversations the player starts always get the team's replies.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.SetTeamChatsAllowedAsync(System.Boolean)">
+      <summary>
+            Lets the game's team start conversations with the player, or stops it, e.g. from a switch in the game's settings.
+            Conversations the player starts are not affected. Needs a player (<see cref="P:BeeAppie.Unity.BeeAppieSdk.IsInitialized" />): without one the team
+            cannot write to them anyway. Returns whether the server took the choice. Never throws.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.DeleteUserAsync">
+      <summary>
+            Erases the player and everything BeeAppie stores about them (nothing to erase without a player). No new player is
+            created: the game carries on without one until one is needed.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.IsCommunicationRead(BeeAppie.Unity.Communication)">
+      <summary>Whether the player has read the announcement: on the server, or on this device (before a player exists).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.MarkCommunicationViewedAsync(System.String)">
+      <summary>
+            Records that the player opened the announcement: on this device, and for the player if there is one (none is
+            created; offline, sent later). Never throws.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.MarkCommunicationClickedAsync(System.String)">
+      <summary>
+            The player tapped the announcement's button: a statistic, so only for a player (who allows usage statistics), and
+            never creating one. Offline, sent later. Never throws.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.MarkCommunicationAcknowledgedAsync(System.String)">
+      <summary>
+            The player acknowledged an announcement that asks for it: at once on the device (the copy shows it done), and on
+            BeeAppie now or, offline, as soon as it can be reached. Creates the player if there is none. Never throws.
+            </summary>
+    </member>
+    <member name="F:BeeAppie.Unity.BeeAppieSdk.NewsPageSize">
+      <summary>Announcements kept on the device for offline: the first page of <see cref="M:BeeAppie.Unity.BeeAppieSdk.LoadCommunicationsAsync" />.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.LoadCommunicationsAsync">
+      <summary>
+            The announcements for the player, important ones then newest first, in the device's language when the game has it:
+            the first <see cref="F:BeeAppie.Unity.BeeAppieSdk.NewsPageSize" /> from BeeAppie (kept on the device), or offline the copy kept last time
+            (<see cref="P:BeeAppie.Unity.CommunicationsView.IsUpToDate" /> false; empty if there is none). Never throws. Further pages:
+            <c>Client.GetCommunicationsAsync(skip, take)</c>.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.CachedCommunications">
+      <summary>The copy <see cref="M:BeeAppie.Unity.BeeAppieSdk.LoadCommunicationsAsync" /> kept last time (also offline): empty and not up to date if there is none.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.Config">
+      <summary>
+            Remote config values, feature flags and the game's status (update required, maintenance), for the current player:
+            the last fetched, kept on the device, so it works offline and from the first frame. Fetched at start, when the
+            player changes and when the game resumes; <see cref="E:BeeAppie.Unity.BeeAppieSdk.ConfigChanged" /> tells.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.RefreshConfigAsync">
+      <summary>
+            Fetches the config now, e.g. after setting a property rules depend on. Never throws: if BeeAppie cannot be reached
+            (offline, the server down), it returns the last values (<see cref="P:BeeAppie.Unity.BeeAppieSdk.Config" />), with IsUpToDate false and FetchedAt
+            saying when they were fetched.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.RefreshConfigAsync(System.Boolean)">
+      <param name="open">The game was just opened: the request counts it, if the game counts opens.</param>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.UserData">
+      <summary>
+            The signed-in player's own data, the same on all their devices: save slots, progress, settings, unlocked items. Kept
+            on the device too, so reads work offline. Made the first time it is used (after <see cref="M:BeeAppie.Unity.BeeAppieSdk.Start(System.String,System.Action{BeeAppie.Unity.BeeAppieOptions})" />); from then on it
+            stays in step by itself (at start, when the game resumes, when the player changes).
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.Achievements">
+      <summary>
+            Achievements that work offline: unlock and add progress at once, read what the device knows, and hear when one is
+            unlocked. Sent in batches with the time each happened. Made the first time it is used (after <see cref="M:BeeAppie.Unity.BeeAppieSdk.Start(System.String,System.Action{BeeAppie.Unity.BeeAppieOptions})" />).
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.Leaderboards">
+      <summary>
+            Leaderboard scores that survive offline: <see cref="M:BeeAppie.Unity.Leaderboards.SubmitScore(System.String,System.Double,System.Nullable{System.DateTimeOffset})" /> keeps each score with the time it
+            was made and sends it when BeeAppie can be reached; leaderboards read through it are kept for offline.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.Feedback">
+      <summary>
+            Feedback that survives offline: <see cref="M:BeeAppie.Unity.Feedback.SendAsync(BeeAppie.Unity.FeedbackCategory,System.String,System.Nullable{System.Int32})" /> keeps the message on the device and sends it now
+            or as soon as BeeAppie can be reached.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.Content">
+      <summary>
+            Lists the game's team publishes in the dashboard (levels, tips, word lists), downloaded only when the game asks with
+            <c>Content.GetAsync&lt;T&gt;(name)</c>: everything the first time, then only what changed. Kept on the device, so it
+            works offline. Needs no player and no consent. Use it after <see cref="M:BeeAppie.Unity.BeeAppieSdk.Start(System.String,System.Action{BeeAppie.Unity.BeeAppieOptions})" />.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.Entitlements">
+      <summary>
+            The current player's entitlements from BeeAppie (e.g. "pro"): the last fetched, kept on the device, so they work
+            offline and from the first frame. Fetched at start, when the player changes and when the game resumes;
+            <see cref="E:BeeAppie.Unity.BeeAppieSdk.EntitlementsChanged" /> tells. They add to the game's store purchases: check both.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.HasEntitlement(System.String)">
+      <summary>Whether the current player has the entitlement from BeeAppie now. Never throws; false before the first fetch.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.RefreshEntitlementsAsync">
+      <summary>
+            Fetches the entitlements now, e.g. on a "Restore purchases" button. Never throws: if BeeAppie cannot be reached, it
+            returns the last ones (<see cref="P:BeeAppie.Unity.BeeAppieSdk.Entitlements" />), with IsUpToDate false.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.SetPushToken(System.String,System.Boolean)">
+      <summary>
+            Where this device receives push notifications: the token from your push plugin, e.g. Firebase Messaging for Unity.
+            On iOS pass the APNs token (hex); on Android the FCM registration token.
+            </summary>
+    </member>
+    <member name="E:BeeAppie.Unity.BeeAppieSdk.PushOpened">
+      <summary>
+            Raised on the main thread when the player opens a BeeAppie notification (see <see cref="M:BeeAppie.Unity.BeeAppieSdk.HandlePushOpened(System.Collections.Generic.IReadOnlyDictionary{System.String,System.String})" />), with its
+            data: e.g. "conversationId" for a support reply, to open that conversation.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.HandlePushOpened(System.Collections.Generic.IReadOnlyDictionary{System.String,System.String})">
+      <summary>
+            Call when the player taps a notification, with its data (from your push plugin, e.g. Firebase Messaging's
+            OnMessageReceived with NotificationOpened). Reports BeeAppie's notifications as opened, for the dashboard's open rate,
+            and raises <see cref="E:BeeAppie.Unity.BeeAppieSdk.PushOpened" />; other notifications are ignored.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.IsBeeAppiePush(System.Collections.Generic.IReadOnlyDictionary{System.String,System.String})">
+      <summary>Whether a notification's data is from BeeAppie.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.PushNotificationsEnabled">
+      <summary>
+            Whether the player wants BeeAppie's notifications on this device: their choice in the game (see
+            <see cref="M:BeeAppie.Unity.BeeAppieSdk.SetPushNotificationsEnabledAsync(System.Boolean)" />), saved on the device. On until they turn them off.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.PushPermission">
+      <summary>
+            Whether the phone lets the game show notifications, as last reported with <see cref="M:BeeAppie.Unity.BeeAppieSdk.SetPushPermission(System.String)" />:
+            "Unknown", "Allowed", "Provisional" (iOS) or "Denied".
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.PushNotificationsAllowed">
+      <summary>Whether this device gets BeeAppie's notifications: turned on in the game and not blocked in the settings.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.SetPushNotificationsEnabledAsync(System.Boolean)">
+      <summary>
+            Turns BeeAppie's notifications on this device off or on again, e.g. from a switch in the game's settings. The choice
+            is saved on the device and on the server (once it can be reached), and the token stays registered, so turning them on
+            again works at once. Returns <see cref="P:BeeAppie.Unity.BeeAppieSdk.PushNotificationsAllowed" />. Never throws.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.SetPushPermission(System.String)">
+      <summary>
+            Whether the phone lets the game show notifications, from your push plugin (e.g. its authorization status): "Allowed",
+            "Provisional" (iOS), "Denied" or "Unknown". Call it at startup and when the game comes back to the foreground: BeeAppie
+            sends nothing to a device whose settings block them.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieSdk.AnonymousCountingEnabled">
+      <summary>
+            Whether this device may be counted in the game's anonymous opens and active installs: on unless the player turned it
+            off. It only matters while the game's team counts them (<see cref="P:BeeAppie.Unity.RemoteConfig.CountsVisits" />); a privacy screen
+            shows the switch then.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.SetAnonymousCountingEnabled(System.Boolean)">
+      <summary>
+            Turns anonymous counting of this device off or on again, e.g. from a switch in the game's privacy screen. Off, the
+            device forgets the days it kept for it and its opens are no longer counted. Kept on the device only: nothing is sent.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.GetSurveyAsync(System.String)">
+      <summary>
+            The survey <paramref name="key" /> if this install may be asked it now (live in the dashboard, for this platform and
+            version, not answered or closed yet unless the survey asks again, and not within the game's wait between surveys);
+            null otherwise, also offline before surveys were ever fetched, or on a plan without them. For a game that draws its
+            own survey: show it, then call <see cref="M:BeeAppie.Unity.BeeAppieSdk.SurveyShown(BeeAppie.Unity.Survey)" />, and <see cref="M:BeeAppie.Unity.BeeAppieSdk.AnswerSurvey(BeeAppie.Unity.Survey,System.Int32,System.String)" /> or <see cref="M:BeeAppie.Unity.BeeAppieSdk.DismissSurvey(BeeAppie.Unity.Survey)" />.
+            The ready-made card (<c>BeeAppieUI.ShowSurveyAsync</c>) does all this. Never throws.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.SurveyShown(BeeAppie.Unity.Survey)">
+      <summary>The survey is on screen: counted once per game run, for the dashboard's response rate.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.DismissSurvey(BeeAppie.Unity.Survey)">
+      <summary>The player closed the survey without answering: it counts as asked, and the game's wait before another survey starts.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.BeeAppieSdk.AnswerSurvey(BeeAppie.Unity.Survey,System.Int32,System.String)">
+      <summary>
+            The player's answer: <paramref name="value" /> within the survey's range (1–5 stars, 0 or 1 for thumbs, 0–10), with an
+            optional <paramref name="comment" />. Queued and sent at once, or later when offline. A low answer with a comment also
+            reaches the team's feedback inbox: only then is a player made, if there is none.
+            </summary>
+    </member>
+    <member name="T:BeeAppie.Unity.ChatException">
+      <summary>A failure reported by the chat server, e.g. joining a conversation that does not exist.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.ChatConnection">
+      <summary>
+            Real-time support chat: new messages, typing indicators and conversation changes as they happen, for the conversations
+            you join (and updates about all of the player's own conversations). Messages are still sent with
+            <see cref="M:BeeAppie.Unity.BeeAppieClient.SendMessageAsync(System.String,System.String,System.Byte[])" />, which pushes them here. Get the shared, connected one with
+            <see cref="M:BeeAppie.Unity.BeeAppieSdk.ChatAsync" />.
+            <para>
+            Events are raised on the main thread. Messages sent while the connection was down are not replayed: on
+            <see cref="E:BeeAppie.Unity.ChatConnection.Reconnected" />, fetch what you show again. Not available on WebGL, which has no streaming HTTP.
+            </para>
+            Under the hood: ASP.NET Core SignalR's JSON protocol over Server-Sent Events, as the Android and iOS SDKs.
+            </summary>
+    </member>
+    <member name="E:BeeAppie.Unity.ChatConnection.MessageReceived">
+      <summary>A new message in a joined conversation, from the team or the player (e.g. sent from another device).</summary>
+    </member>
+    <member name="E:BeeAppie.Unity.ChatConnection.ConversationUpdated">
+      <summary>One of the player's conversations changed: new last message, unread count, status, title…</summary>
+    </member>
+    <member name="E:BeeAppie.Unity.ChatConnection.ConversationDeleted">
+      <summary>(conversationId) The conversation was deleted, by the player or by the team.</summary>
+    </member>
+    <member name="E:BeeAppie.Unity.ChatConnection.Typing">
+      <summary>(conversationId, fromTeam, isTyping) Someone else in a joined conversation started or stopped typing.</summary>
+    </member>
+    <member name="E:BeeAppie.Unity.ChatConnection.Reconnecting">
+      <summary>The connection dropped and is being re-established automatically.</summary>
+    </member>
+    <member name="E:BeeAppie.Unity.ChatConnection.Reconnected">
+      <summary>Connected again after a drop; joined conversations were joined again. Fetch what may have been missed.</summary>
+    </member>
+    <member name="E:BeeAppie.Unity.ChatConnection.Closed">
+      <summary>Closed: stopped (null), or reconnecting gave up (the error). <see cref="M:BeeAppie.Unity.ChatConnection.StartAsync" /> connects again.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.ChatConnection.StartAsync">
+      <summary>Connects (or reconnects after <see cref="M:BeeAppie.Unity.ChatConnection.StopAsync" />), joining again the conversations joined before.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.ChatConnection.StopAsync">
+      <summary>Disconnects, e.g. while the game is paused. <see cref="M:BeeAppie.Unity.ChatConnection.StartAsync" /> reconnects.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.ChatConnection.JoinConversationAsync(System.String)">
+      <summary>Receives messages and typing in this conversation from now on; kept across reconnections.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.ChatConnection.SendTypingAsync(System.String,System.Boolean)">
+      <summary>Tells the team the player is (or stopped) typing. Only a hint: send it at most every few seconds.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.Entitlement">
+      <summary>
+            An entitlement the current player has from BeeAppie, e.g. "pro". One way to have access, next to the game's own store
+            purchases: check both, and never take away what a store purchase gives because BeeAppie does not list it.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Entitlement.ExpiresAt">
+      <summary>Null: for good. It stops counting at this time, also offline.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.Entitlements">
+      <summary>
+            The current player's entitlements from BeeAppie, as of <see cref="P:BeeAppie.Unity.Entitlements.FetchedAt" />: the last ones fetched, also offline
+            (kept on the device). They add to the game's store purchases:
+            <c>isPro = store.Owns("pro") || BeeAppieSdk.HasEntitlement("pro")</c>.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Entitlements.FetchedAt">
+      <summary>When they were fetched; null before the first fetch.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Entitlements.IsUpToDate">
+      <summary>
+            True when fetched since the game started and the last fetch reached BeeAppie. False when they are the ones kept on
+            the device (the game started offline, or the last fetch failed), as of <see cref="P:BeeAppie.Unity.Entitlements.FetchedAt" />.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Entitlements.Active">
+      <summary>The ones active now: an expired one stops counting at its time, also offline.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Entitlements.Has(System.String)">
+      <summary>Whether the player has it now from BeeAppie.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.Feedback">
+      <summary>
+            Feedback that survives offline (docs/plans/22-languages-and-offline-sends.md): <see cref="M:BeeAppie.Unity.Feedback.SendAsync(BeeAppie.Unity.FeedbackCategory,System.String,System.Nullable{System.Int32})" /> keeps the message
+            on the device first, then sends it, now or as soon as BeeAppie can be reached. The team sees when it was written. Kept
+            at most <see cref="F:BeeAppie.Unity.Feedback.MaxAgeDays" /> days. Sending creates the player, as feedback always has (replies reach them). Nothing
+            here throws. <c>Client.SubmitFeedbackAsync</c> stays for games that want the server's answer.
+            </summary>
+    </member>
+    <member name="F:BeeAppie.Unity.Feedback.MaxAgeDays">
+      <summary>Feedback not sent within this many days is dropped (BeeAppie takes the written time up to 30 days back).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Feedback.Pending">
+      <summary>Messages written and not sent yet.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Feedback.SendAsync(BeeAppie.Unity.FeedbackCategory,System.String,System.Nullable{System.Int32})">
+      <summary>
+            Sends the player's feedback: kept on the device at once, then sent. Never throws. True: the team has it. False: it
+            waits on the device and goes when it can; tell the player so. An empty message, or one BeeAppie refuses, is dropped
+            and logged, and also answers true: nothing waits.
+            </summary>
+    </member>
+    <member name="T:BeeAppie.Unity.BeeAppieApiException">
+      <summary>An error from the BeeAppie API. Branch on <see cref="P:BeeAppie.Unity.BeeAppieApiException.Code" /> (e.g. "consent_required", "not_found").</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieApiException.Status">
+      <summary>The HTTP status; 0 when the server could not be reached.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieApiException.Suspension">
+      <summary>With code "user_suspended": until when the player is suspended, and why, to show them.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.BeeAppieApiException.RetryAfter">
+      <summary>The server's Retry-After, with 429 (a limit) and 503 (the server is busy): when trying again can succeed.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.Leaderboards">
+      <summary>
+            Leaderboard scores that survive offline (docs/plans/22-languages-and-offline-sends.md): <see cref="M:BeeAppie.Unity.Leaderboards.SubmitScore(System.String,System.Double,System.Nullable{System.DateTimeOffset})" /> keeps
+            the score on the device with the time it was made and sends it, in batches, as soon as BeeAppie can be reached (from the
+            SDK's tick, and on resume). It counts in the season running when it was made, if it arrives at most 7 days late. Nothing
+            here throws. Sending creates the player, as submitting a score always has: a leaderboard shows the player's name.
+            <para><see cref="M:BeeAppie.Unity.Leaderboards.LoadAsync(System.String,System.String,System.Int32)" /> reads a leaderboard and keeps a copy on the device; <see cref="M:BeeAppie.Unity.Leaderboards.Cached(System.String,System.String)" /> gives that copy at once
+            (also offline). <see cref="M:BeeAppie.Unity.Leaderboards.ListAsync" /> and <see cref="M:BeeAppie.Unity.Leaderboards.CachedList" /> do the same for the list of the game's leaderboards. <c>Client.SubmitScoreAsync</c> stays for games that want the server's answer at once.
+            </para></summary>
+    </member>
+    <member name="E:BeeAppie.Unity.Leaderboards.Changed">
+      <summary>Raised on the main thread when waiting scores were sent (or dropped), e.g. to load the leaderboard again.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Leaderboards.PendingScores">
+      <summary>Scores not sent yet: made offline, or before BeeAppie answered.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Leaderboards.PendingBest(System.String)">
+      <summary>
+            The best score waiting to be sent for the leaderboard (its key or id, as passed to <see cref="M:BeeAppie.Unity.Leaderboards.SubmitScore(System.String,System.Double,System.Nullable{System.DateTimeOffset})" />), or null:
+            the lowest on a leaderboard where lower is better (known once it was loaded), else the highest.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Leaderboards.SubmitScore(System.String,System.Double,System.Nullable{System.DateTimeOffset})">
+      <summary>
+            Submits a score to the leaderboard (its key, e.g. "high-score", or id): kept on the device at once and sent as soon as
+            BeeAppie can be reached. <paramref name="at" />: when it was made, if not now. A score BeeAppie refuses (outside the
+            leaderboard's range, not open at that time, more than 7 days late) is dropped and logged.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Leaderboards.SendNowAsync">
+      <summary>Sends the waiting scores now. Never throws: false when BeeAppie could not be reached (they stay).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Leaderboards.LoadAsync(System.String,System.String,System.Int32)">
+      <summary>
+            The leaderboard as BeeAppie has it, after sending the scores that wait: its top <paramref name="top" /> of
+            <paramref name="season" /> ("current", "previous" or a past season's key) and the player's own entries. Kept on the
+            device; offline, the last copy (<see cref="P:BeeAppie.Unity.LeaderboardView.IsUpToDate" /> false). Null when there is neither. Never throws.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Leaderboards.Cached(System.String,System.String)">
+      <summary>The copy kept by the last <see cref="M:BeeAppie.Unity.Leaderboards.LoadAsync(System.String,System.String,System.Int32)" /> of this leaderboard and season, for this player; null if none.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Leaderboards.ListAsync">
+      <summary>
+            The game's leaderboards, as BeeAppie has them, by name. Kept on the device; offline, or when BeeAppie can't be
+            reached, <see cref="M:BeeAppie.Unity.Leaderboards.CachedList" /> (<see cref="P:BeeAppie.Unity.LeaderboardList.IsUpToDate" /> false). Never throws.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Leaderboards.CachedList">
+      <summary>
+            The list kept by the last <see cref="M:BeeAppie.Unity.Leaderboards.ListAsync" />, or before there is one the leaderboards whose copies are kept;
+            empty if neither. At once, also offline.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Leaderboards.SeasonsAsync(System.String)">
+      <summary>
+            The past seasons of a leaderboard that players can look back at, newest first: those with scores within the last
+            <see cref="P:BeeAppie.Unity.Ranking.KeptSeasons" />, each with the developer's <see cref="P:BeeAppie.Unity.RankingSeason.Name" /> in the device's language
+            when they set one (else show your own words). Load one with <see cref="M:BeeAppie.Unity.Leaderboards.LoadAsync(System.String,System.String,System.Int32)" /> and its key. Kept on the device;
+            offline, <see cref="M:BeeAppie.Unity.Leaderboards.CachedSeasons(System.String)" /> (<see cref="P:BeeAppie.Unity.LeaderboardSeasons.IsUpToDate" /> false). Empty without seasons or
+            with past seasons not shown. Never throws.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Leaderboards.CachedSeasons(System.String)">
+      <summary>The past seasons kept by the last <see cref="M:BeeAppie.Unity.Leaderboards.SeasonsAsync(System.String)" />, at once (empty when none).</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.LeaderboardList">
+      <summary>The game's leaderboards as <see cref="M:BeeAppie.Unity.Leaderboards.ListAsync" /> found them: from BeeAppie now, or kept on the device.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.LeaderboardList.IsUpToDate">
+      <summary>False: BeeAppie couldn't be reached, this is the list from <see cref="P:BeeAppie.Unity.LeaderboardList.FetchedAt" />.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.LeaderboardSeasons">
+      <summary>A leaderboard's past seasons as <see cref="M:BeeAppie.Unity.Leaderboards.SeasonsAsync(System.String)" /> found them: from BeeAppie now, or kept on the device.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.LeaderboardSeasons.IsUpToDate">
+      <summary>False: BeeAppie couldn't be reached, this is the list from <see cref="P:BeeAppie.Unity.LeaderboardSeasons.FetchedAt" />.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.LeaderboardView">
+      <summary>A leaderboard as <see cref="M:BeeAppie.Unity.Leaderboards.LoadAsync(System.String,System.String,System.Int32)" /> found it: from BeeAppie now, or the copy on the device.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.LeaderboardView.Mine">
+      <summary>The player's own entries in the season, with their positions (none before there is a player).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.LeaderboardView.IsUpToDate">
+      <summary>False: BeeAppie couldn't be reached, this is the copy from <see cref="P:BeeAppie.Unity.LeaderboardView.FetchedAt" />.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.LeaderboardView.PendingBest">
+      <summary>The player's best score made since that is not on BeeAppie yet; null if none.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.User.IsAnonymous">
+      <summary>Not signed in with an account (anonymous users are kept per device).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.User.Suspended">
+      <summary>Whether the player is suspended now; <see cref="P:BeeAppie.Unity.User.Suspension" /> says until when and why.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.User.Identities">
+      <summary>The sign-in accounts linked to the player; none while anonymous.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.User.RolloutBucket">
+      <summary>For percentage rollouts: all the player's devices share it. Null for players from before buckets.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.User.TeamChatsOptedOut">
+      <summary>
+            The player does not want the game's team to start conversations with them (see
+            <see cref="M:BeeAppie.Unity.BeeAppieSdk.SetTeamChatsAllowedAsync(System.Boolean)" />). They can still start one, and get the team's replies in it.
+            </summary>
+    </member>
+    <member name="T:BeeAppie.Unity.UserIdentity">
+      <summary>A sign-in account linked to the player (Apple, Google, Firebase, your own login…).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.UserIdentity.Kind">
+      <summary>E.g. "Apple", "Google", "Firebase", "Custom".</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.UserIdentity.Subject">
+      <summary>The provider's id for the player, e.g. the Firebase uid.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.UserSuspension">
+      <summary>A suspension of the player by the game's team, to show them while it lasts.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.UserSuspension.Until">
+      <summary>When it ends; null when it does not (the player is banned).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.UserSuspension.Reason">
+      <summary>Why, as the team wrote it for the player, e.g. with how to appeal.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.Consent">
+      <summary>What the user allows the game to collect. Nothing is collected until they agree.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Consent.EventPermission">
+      <summary>Analytics events.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Consent.IssuesPermission">
+      <summary>Error reports.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Consent.SessionPermission">
+      <summary>Play sessions.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Consent.TextVersion">
+      <summary>
+            The version of the consent wording the player saw, kept with the choice as evidence of what they agreed to. Change
+            it when you change the wording.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.SignInResult.Merged">
+      <summary>The account already had a user, and this device's anonymous one was merged into it: reload what you show.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.SingleRecordPerUser">
+      <summary>Only each player's best score counts.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.StartsAt">
+      <summary>Scores are taken from this time; with seasons, the first season's start. Null: from its creation.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.EndsAt">
+      <summary>No scores from this time; the leaderboard shows its final results. Null: no end.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.IsOpen">
+      <summary>Whether it takes scores now. When it doesn't, SubmitScoreAsync fails with the code "ranking_not_open".</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.SeasonUnit">
+      <summary>Repeating seasons: "None", "Day", "Week" or "Month", each lasting <see cref="P:BeeAppie.Unity.Ranking.SeasonLength" /> of them.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.CurrentSeason">
+      <summary>With seasons, the one shown now (the last one once it has ended).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.Order">
+      <summary>Which scores rank first: "HigherIsBetter" (points) or "LowerIsBetter" (times, moves).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.ScoreFormat">
+      <summary>How scores read: "Number", or "Time" (the score is milliseconds, shown as 1:23.45).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.SeasonTimeZone">
+      <summary>The IANA time zone the seasons follow, e.g. "Europe/London": a season's days are its days there.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.KeptSeasons">
+      <summary>How many past seasons keep their scores.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.CurrentSeasonName">
+      <summary>
+            The developer's names for the seasons, in the device's language: the running one ("Today"), the one before
+            ("Yesterday") and older ones with {number}, {start} and {end}. Null: your game's own words. Seasons carry theirs
+            filled in (<see cref="P:BeeAppie.Unity.RankingSeason.Name" />).
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.ShowPastSeasons">
+      <summary>Players can look back at past seasons (<see cref="M:BeeAppie.Unity.Leaderboards.SeasonsAsync(System.String)" />); false: show only the current one.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Ranking.LowerIsBetter">
+      <summary>The lowest score ranks first (times, moves).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Ranking.IsBetter(System.Double,System.Double)">
+      <summary>Whether <paramref name="score" /> beats <paramref name="other" /> here (an equal score is no improvement).</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.ScoreFormats">
+      <summary>The text of a score in a leaderboard's format, as BeeAppie writes it (<see cref="P:BeeAppie.Unity.RankingEntry.ScoreText" />).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.ScoreFormats.Format(System.String,System.Double)">
+      <summary>
+            "Time": milliseconds as m:ss.cc (1:23.45), h:mm:ss.cc from an hour, "-" before a negative time; hundredths rounded
+            down. "Number" (or anything else): null, format the number in the player's locale.
+            </summary>
+    </member>
+    <member name="T:BeeAppie.Unity.RankingSeason">
+      <summary>A season of a leaderboard: pass its <see cref="P:BeeAppie.Unity.RankingSeason.Key" /> (or "current", "previous") as the season.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RankingSeason.EntryCount">
+      <summary>In GetRankingSeasonsAsync: how many scores it kept.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RankingSeason.Number">
+      <summary>1 for the leaderboard's first season; 0 when unknown (from before the season settings changed).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RankingSeason.IsPrevious">
+      <summary>The season right before the current one ("Last season").</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RankingSeason.Name">
+      <summary>The developer's name for it, filled in and in the device's language ("Today", "Round 12"); null: use your own words.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RankingEntry.Position">
+      <summary>1 for the top score.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RankingEntry.ScoreText">
+      <summary>The score as the leaderboard shows it, e.g. "1:23.45" for a time; null for numbers (format <see cref="P:BeeAppie.Unity.RankingEntry.Score" /> yourself).</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.Achievement">
+      <summary>An achievement, with the current user's progress.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Achievement.Name">
+      <summary>Null for a hidden achievement the user has not unlocked yet.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Achievement.IconUrl">
+      <summary>Its icon, set in the dashboard: null if it has none, or while it is a hidden achievement the user has not unlocked.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Achievement.Goal">
+      <summary>The progress that unlocks it: 1 for a one-off achievement.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Achievement.UpdatedAt">
+      <summary>When the player's progress last changed; null when they have none (or there is no player yet).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Achievement.UnlockedPercent">
+      <summary>The share of the game's users who unlocked it, 0 to 100.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Achievement.JustUnlocked">
+      <summary>After unlocking or progress: true when this call unlocked it, to celebrate.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.PollResult">
+      <summary>How a poll's votes are split, once the player can see them.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.PollOptionResult.OtherTexts">
+      <summary>What players wrote for an "Other" option.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.PollOption.IsOther">
+      <summary>The "Other" option: the user writes their own answer (<see cref="P:BeeAppie.Unity.PollChoice.OtherText" />).</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.PollChoice">
+      <summary>An option the user chose, with their own text for an "Other" option.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.Communication">
+      <summary>An announcement from the dashboard's Communications.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Communication.RequireAcknowledgment">
+      <summary>The player must confirm they read it (<see cref="M:BeeAppie.Unity.BeeAppieClient.MarkCommunicationAcknowledgedAsync(System.String)" />).</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.ConversationTopic">
+      <summary>One of the app's topics (set up in the dashboard's chat settings): pass its key to CreateConversationAsync.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Conversation.Topic">
+      <summary>The topic's key, e.g. "billing" (set up in the dashboard's chat settings); null for a general conversation.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Message.MessageType">
+      <summary>"User", "Agent" or "System".</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Message.AvatarUrl">
+      <summary>
+            The picture to show next to the message, from a public address that never changes: the team member's photo, or
+            the app's icon for "System" messages. Null: the member's initials, or BeeAppie's icon.
+            </summary>
+    </member>
+    <member name="T:BeeAppie.Unity.ServiceStatus">
+      <summary>BeeAppie's version and clock, e.g. to check it can be reached.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.AppStatus">
+      <summary>Whether this version must or can update, and maintenance (set in the dashboard's App status).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.AppStatus.UpdateRequired">
+      <summary>This version is older than the platform's minimum and the team requires the update (Prompt is "Require").</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.AppStatus.UpdateAvailable">
+      <summary>A newer version is in the store.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.AppStatus.Prompt">
+      <summary>What to show for this version, as the team chose: "None", "Recommend" (a prompt the player can dismiss) or "Require" (block until updated).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.AppStatus.RemindAfterHours">
+      <summary>With "Recommend": hours before asking again once dismissed (0: at every launch).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.AppStatus.StoreUrl">
+      <summary>Where to update: the store link from the app settings.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.AppStatus.MaintenanceMessage">
+      <summary>Set while the game is down for maintenance.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.ConsentScreen">
+      <summary>
+            The consent question's title and message as the game's team wrote them in the dashboard. A text left null: use your
+            own. Record <c>"{your consent text version}+{Version}"</c> with the player's choice, e.g. "mygame-1+app-3".
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.ConsentScreen.Version">
+      <summary>The texts' saved version, e.g. "app-3".</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.CommunicationsView">
+      <summary>The announcements as <see cref="M:BeeAppie.Unity.BeeAppieSdk.LoadCommunicationsAsync" /> found them.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.CommunicationsView.FetchedAt">
+      <summary>When the list came from BeeAppie; null: never on this device.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.CommunicationsView.IsUpToDate">
+      <summary>False: BeeAppie couldn't be reached and this is the copy on the device.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.PromoSlot">
+      <summary>Where a promo is shown.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.PromoSlot.Banner">
+      <summary>Full width, 50–90 points high.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.PromoSlot.Card">
+      <summary>About 300×250 points.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.PromoSlot.Fullscreen">
+      <summary>The whole screen, closed by the player.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.PromoImageKind">
+      <summary>The shape of a ready-made picture.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.PromoImageKind.Icon">
+      <summary>Square, at least 512×512.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.PromoImageKind.Banner">
+      <summary>6.4:1, e.g. 1280×200.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.PromoImageKind.Card">
+      <summary>6:5, e.g. 1200×1000.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.PromoImageKind.FullscreenPortrait">
+      <summary>9:16, e.g. 1080×1920.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.PromoImageKind.FullscreenLandscape">
+      <summary>16:9, e.g. 1920×1080.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.PromoReportReason">
+      <summary>Why a player reports a promo.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.PromoReportReason.Broken">
+      <summary>It doesn't show properly, or its link doesn't work.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.PromoImageSize">
+      <summary>One size of a promo's icon or picture.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.PromoImage">
+      <summary>A ready-made picture of a promo, in every size, smallest first.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.PromoLink">
+      <summary>Where a tap leads: the promoted app's store listing for this platform.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.PromoPicture">
+      <summary>A ready-made picture of a promo, picked for the space: show it aspect-fit (never cropped) on the accent colour.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.PromoPicture.AspectRatio">
+      <summary>Width over height.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.Promo">
+      <summary>
+            A promo of another app to show: texts, colour, pictures and the store link, as BeeAppie served it. Only the ready-made
+            promo views (BeeAppie.Unity.UI) show promos: they check what is on screen before a view counts.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Promo.Title">
+      <summary>Usually the app's name, up to 30 characters.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Promo.Subtitle">
+      <summary>Up to 60 characters.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Promo.ButtonText">
+      <summary>E.g. "Get", in the player's language.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Promo.AccentColor">
+      <summary>E.g. <c>#F5A623</c>: the button, and the background behind pictures.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Promo.Label">
+      <summary>The small label every promo must show, e.g. "Also by us", in the player's language.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Promo.Icon">
+      <summary>The icon in every size, smallest first.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Promo.Images">
+      <summary>The ready-made pictures for this slot, if the team made them (see <see cref="M:BeeAppie.Unity.Promo.PictureFor(System.Double,System.Double,System.Double)" />).</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Promo.Link">
+      <summary>Where a tap leads: the promoted app's store listing for this platform.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Promo.IconUrl(System.Double,System.Double)">
+      <summary>
+            The icon's address for a square of <paramref name="size" /> points on a screen of this scale (e.g.
+            <c>Screen.dpi / 160f</c>).
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Promo.PictureFor(System.Double,System.Double,System.Double)">
+      <summary>
+            The ready-made picture to show aspect-fit (on <see cref="P:BeeAppie.Unity.Promo.AccentColor" />) in a space of this size in points on a screen
+            of this scale; null when there is none whose shape is within 15% of the space's, so icon and texts are laid out instead.
+            </summary>
+    </member>
+    <member name="T:BeeAppie.Unity.RemoteConfig">
+      <summary>
+            Remote config values and feature flags for the current player, as of <see cref="P:BeeAppie.Unity.RemoteConfig.FetchedAt" />: the last ones fetched,
+            also offline (kept on the device). Each getter takes the value to use when the key is missing or of another type, so
+            the game works before the first fetch.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RemoteConfig.ConsentScreen">
+      <summary>
+            The consent question's title and message as the game's team wrote them in the dashboard, in the device's language when
+            they translated them; null to use your own. The game's consent screen can show them, recording
+            <see cref="P:BeeAppie.Unity.ConsentScreen.Version" /> in its consent's text version.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RemoteConfig.AchievementsNeedConsent">
+      <summary>
+            The game sends achievements only with consent to usage statistics (set in the dashboard): until the player allows
+            them, unlocks and progress stay on the device (<see cref="P:BeeAppie.Unity.BeeAppieSdk.Achievements" />).
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RemoteConfig.CountsVisits">
+      <summary>
+            The game counts opens and active installs without consent and without an id (see
+            <see cref="P:BeeAppie.Unity.BeeAppieSdk.AnonymousCountingEnabled" />): the game's privacy screen can then offer the switch to opt out.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RemoteConfig.AnonymousCrashReports">
+      <summary>
+            The game accepts anonymous error reports: errors of players who did not allow error reports are sent without any
+            id, trail or properties. False until the config was first fetched: until then they wait on the device.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RemoteConfig.Status">
+      <summary>Whether this version must or can update, and maintenance.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RemoteConfig.FetchedAt">
+      <summary>When the values were fetched; null before the first fetch.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.RemoteConfig.IsUpToDate">
+      <summary>
+            True when the values were fetched since the game started and the last fetch reached BeeAppie. False when they are
+            the ones kept on the device (the game started offline, or the last fetch failed), as of <see cref="P:BeeAppie.Unity.RemoteConfig.FetchedAt" />.
+            </summary>
+    </member>
+    <member name="M:BeeAppie.Unity.RemoteConfig.IsEnabled(System.String)">
+      <summary>A feature flag: false unless the parameter is true for this player.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.RemoteConfig.GetJson(System.String)">
+      <summary>Any value as JSON, e.g. <c>GetJson("shop")?.ToObject&lt;ShopConfig&gt;()</c>; null when missing.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.RemoteContent">
+      <summary>
+            Remote content (docs/plans/20-remote-content.md): collections of JSON items the game's team writes in the dashboard
+            (levels, tips, word lists…), downloaded only when the game asks with <see cref="M:BeeAppie.Unity.RemoteContent.GetAsync``1(System.String,System.Nullable{System.TimeSpan},System.Boolean)" />: everything the first
+            time, then only what changed. A copy is kept on the device, so it works offline. Needs no player and no consent. Nothing
+            here throws. Use it from the main thread, as the rest of the SDK.
+            </summary>
+    </member>
+    <member name="F:BeeAppie.Unity.RemoteContent.RecentCheck">
+      <summary>A collection checked this recently is answered from the device, without a request.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.RemoteContent.GetAsync``1(System.String,System.Nullable{System.TimeSpan},System.Boolean)">
+      <summary>
+            The collection <paramref name="name" />, each item read as <typeparamref name="T" /> (a [Serializable] class with fields
+            named as in the JSON, a string, a number, or JToken for the raw JSON): the copy on the device if it was
+            checked in the last 5 minutes (unless <paramref name="forceRefresh" />), otherwise after downloading what changed
+            (everything the first time). Offline, when BeeAppie can't be reached, the collection is not published, or the month's
+            downloads are used up: the copy on the device (empty the first time) with <see cref="P:BeeAppie.Unity.ContentResult`1.IsUpToDate" />
+            false. An item that doesn't fit <typeparamref name="T" /> is skipped and logged.
+            </summary>
+      <param name="timeout">How long to wait at most: after it, the copy on the device, while the download finishes in the background for next time.</param>
+    </member>
+    <member name="M:BeeAppie.Unity.RemoteContent.GetAsync(System.String,System.Nullable{System.TimeSpan},System.Boolean)">
+      <summary>The collection as raw JSON items, for a game that reads them itself. See <see cref="M:BeeAppie.Unity.RemoteContent.GetAsync``1(System.String,System.Nullable{System.TimeSpan},System.Boolean)" />.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.RemoteContent.GetCached``1(System.String)">
+      <summary>The copy on the device only, without a request: empty if the collection was never downloaded.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.RemoteContent.GetCached(System.String)">
+      <summary>The copy on the device as raw JSON items. See <see cref="M:BeeAppie.Unity.RemoteContent.GetCached``1(System.String)" />.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.ContentResult`1">
+      <summary>A collection's items as read: the copy on the device, and whether it was checked with BeeAppie just now.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.ContentResult`1.Items">
+      <summary>The items by key (in key order; the collection itself has no order). Empty when it was never downloaded.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.ContentResult`1.Version">
+      <summary>The published version the copy holds; 0 when there is none.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.ContentResult`1.FetchedAt">
+      <summary>When the copy was last checked with BeeAppie; null when it never was.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.ContentResult`1.IsUpToDate">
+      <summary>
+            True when BeeAppie was reached for this call (or within the last 5 minutes). False when the items are the copy on the
+            device because it couldn't be: offline, a timeout, not published, or the month's downloads used up.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.ContentResult`1.NextAt">
+      <summary>
+            When the next item scheduled in the dashboard (Available from) reaches the game; null when nothing is scheduled. It
+            says only that something arrives then, never what: ask again after it (the 5-minute check doesn't hold the call back
+            once it has passed), or show "next puzzle in 3 h". From the last check: in the past when the copy couldn't be checked since.
+            </summary>
+    </member>
+    <member name="T:BeeAppie.Unity.ContentItem`1">
+      <summary>An item of a collection: its stable key and its value.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.SurveyAnswerType">
+      <summary>How a survey is answered.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.SurveyAnswerType.Stars">
+      <summary>1 to 5 stars.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.SurveyAnswerType.Thumbs">
+      <summary>0 thumbs down, 1 thumbs up.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.SurveyAnswerType.Scale">
+      <summary>0 to 10.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.SurveyCommentMode">
+      <summary>When the player is offered a comment box after choosing an answer.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.SurveyAskAgain">
+      <summary>Whether an install that answered or closed a survey is asked it again.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.SurveyPosition">
+      <summary>Where <c>BeeAppieUI.ShowSurveyAsync</c> puts the card over the dimmed screen.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.SurveyResult">
+      <summary>What happened to a survey the game asked to show.</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.SurveyResult.NotShown">
+      <summary>Nothing to ask: not live, not for this install, answered or asked lately, offline, a plan without surveys…</summary>
+    </member>
+    <member name="F:BeeAppie.Unity.SurveyResult.Dismissed">
+      <summary>Closed without answering; counts as asked.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.Survey">
+      <summary>A live survey, in the device's language, with the rules for asking it.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Survey.Key">
+      <summary>What the game's code names it by, e.g. "level-value".</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Survey.Revision">
+      <summary>Goes up when the question changes or the team asks everyone again.</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Survey.LowLabel">
+      <summary>Under the lowest answer, e.g. "Not valuable".</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Survey.HighLabel">
+      <summary>Under the highest answer, e.g. "Very valuable".</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Survey.CommentPrompt">
+      <summary>Above the comment box; null for the ready-made card's own ("Tell us more").</summary>
+    </member>
+    <member name="P:BeeAppie.Unity.Survey.Range">
+      <summary>The lowest and highest answer.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Survey.IsLow(System.Int32)">
+      <summary>A low answer (1–3 stars, thumbs down, 0–6): with a comment, it also reaches the team's feedback inbox.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.Survey.OffersComment(System.Int32)">
+      <summary>Whether the player is offered a comment box after choosing <paramref name="value" />.</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.UserDataRefused">
+      <summary>A write BeeAppie refused for good: the item, and why (e.g. "item_too_large", "user_storage_full", "storage_full").</summary>
+    </member>
+    <member name="T:BeeAppie.Unity.UserData">
+      <summary>
+            The signed-in player's own data, stored by BeeAppie: small JSON objects under a collection and a key (save slots,
+            progress, settings, unlocked items), the same on all their devices and back after a reinstall. Reads come from the copy
+            on the device, so they work offline; writes apply to it at once and are sent when BeeAppie can be reached. Last write
+            wins. Writes made before the player signs in wait and are sent once they do. Needs the game's "User data" switch in the
+            dashboard and a paid plan. Nothing here throws.
+            </summary>
+    </member>
+    <member name="E:BeeAppie.Unity.UserData.Changed">
+      <summary>Raised on the main thread when data from another device (or a reinstall) arrived: read what you show again.</summary>
+    </member>
+    <member name="E:BeeAppie.Unity.UserData.WriteRefused">
+      <summary>
+            Raised on the main thread when BeeAppie refused a write for good, e.g. "item_too_large" or "user_storage_full". The
+            write is dropped; the copy on the device is put back as BeeAppie has it.
+            </summary>
+    </member>
+    <member name="P:BeeAppie.Unity.UserData.PendingWrites">
+      <summary>Writes not sent yet (offline, or waiting for the player to sign in).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.UserData.Get(System.String,System.String)">
+      <summary>The item as stored on the device, or null.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.UserData.Get``1(System.String,System.String)">
+      <summary>The item read as <typeparamref name="T" />, or default when there is none or it does not fit.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.UserData.List(System.String)">
+      <summary>Every item of the collection on the device, by key.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.UserData.List``1(System.String)">
+      <summary>Every item of the collection read as <typeparamref name="T" />, by key; items that do not fit are left out.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.UserData.Put(System.String,System.String,Newtonsoft.Json.Linq.JObject)">
+      <summary>Stores a JSON object: on the device at once, and on BeeAppie as soon as it can be reached.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.UserData.Put``1(System.String,System.String,``0)">
+      <summary>Stores <paramref name="value" />, which must serialise to a JSON object (a class or struct, not a list or a number).</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.UserData.Delete(System.String,System.String)">
+      <summary>Deletes the item: on the device at once, and on BeeAppie as soon as it can be reached.</summary>
+    </member>
+    <member name="M:BeeAppie.Unity.UserData.RefreshAsync">
+      <summary>
+            Sends the waiting writes and fetches what changed on other devices, now. Never throws: false when it could not reach
+            BeeAppie, or the player is not signed in.
+            </summary>
+    </member>
+  </members>
+</doc>
